@@ -4,8 +4,10 @@ const User = db.users;
 /**
  * Create a user.
  * @param {*} req - request received containing a body with:
- *                  - name (String):     user name
- *                  - role (String):     user role
+ *                  - email (String):       email address to idenfiy user
+ *                  - password (String):    user password to authenticate user
+ *                  - name (String):        user name
+ *                  - role (String):        user role
  * @param {*} res - response to send after dealing with the query.
  */
 exports.create = async (req, res) => {
