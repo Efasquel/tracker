@@ -9,16 +9,16 @@ const User = db.users;
  * @param {*} res - response to send after dealing with the query.
  */
 exports.create = async (req, res) => {
-  const { name, role } = req.body;
+  const { email, password, name, role } = req.body;
 
-  if (!name) {
+  if (!email || !password || !name) {
     res.status(400).send({
-      message: `Invalid name.`,
+      message: `Invalid email or password or name.`,
     });
     return;
   }
 
-  const newUser = new User({ name, role });
+  const newUser = new User({ email, password, name, role });
 
   newUser
     .save()
@@ -33,12 +33,18 @@ exports.create = async (req, res) => {
         });
         return;
       }
+      if (err.code === 11000 && err.keyPattern.email) {
+        res.status(400).send({
+          message: `User already exists`,
+        });
+        return;
+      }
       console.error(
-        `Some error occured while creating user "${name}" (role=${role})`,
+        `Some error occured while creating user with email "${email}" (role=${role}, name=${name})`,
         err,
       );
       res.status(500).send({
-        message: `Some error occured while creating user user "${name}" (role=${role})`,
+        message: `Some error occured while creating user with email "${email}"`,
       });
     });
 };
