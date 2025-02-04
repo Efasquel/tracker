@@ -32,7 +32,7 @@ const schema = new mongoose.Schema(
 );
 
 schema.method("toJSON", function toJSON() {
-  const { __v, _id, ...object } = this.toObject();
+  const { __v, _id, password, ...object } = this.toObject();
   object.id = _id;
   return object;
 });
@@ -52,7 +52,7 @@ schema.pre("save", async function (next) {
 });
 
 // Method to compare passwords
-schema.methods.validatePassword = (candidatePassword) => {
+schema.methods.validatePassword = function (candidatePassword) {
   return argon2.verify(this.password, candidatePassword);
 };
 
