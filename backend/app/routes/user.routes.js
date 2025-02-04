@@ -13,5 +13,8 @@ module.exports = (app) => {
   // Delete a user
   router.delete("/:id", authMiddleware, users.deleteOne);
 
+  // Update a user or a set of users
+  router.patch("/:id", authMiddleware, users.updateOne);
+
   app.use("/api/user", router);
 };

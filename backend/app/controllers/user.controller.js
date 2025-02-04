@@ -48,7 +48,7 @@ exports.create = async (req, res) => {
         err,
       );
       res.status(500).send({
-        message: "Server Internal Error",
+        message: "Internal Server Error",
       });
     });
 };
@@ -88,7 +88,7 @@ exports.fetchOne = async (req, res) => {
         `Error while finding user with id=${requestedUserId} for ${req.user.userId}:`,
         err,
       );
-      return res.status(500).send({ message: "Server Internal Error" });
+      return res.status(500).send({ message: "Internal Server Error" });
     });
 };
 
@@ -127,6 +127,73 @@ exports.deleteOne = async (req, res) => {
         `Error while deleting user with id=${requestedUserId} as requested by ${req.user.userId}:`,
         err,
       );
-      return res.status(500).send({ message: "Server Internal Error" });
+      return res.status(500).send({ message: "Internal Server Error" });
+    });
+};
+
+/**
+ * Update a user.
+ * @param {*} req - request received containing in param:
+ *                  - id (String):    id of the user to update.
+ *                and in body:
+ *                  - email (String): new email address for user.
+ *                  - name (String):  new user name.
+ *                  - role (String):  new role for user.
+ * @param {*} res - response to send after dealing with the query:
+ *                  - A message indicating whether the operation was successful or not.
+ */
+exports.updateOne = async (req, res) => {
+  const userIdToUpdate = req.params?.id;
+
+  if (!userIdToUpdate || !ObjectId.isValid(userIdToUpdate)) {
+    console.error(
+      `No user id provided (or invalid one) by ${req.user.userId}: ${requestedUserId}`,
+    );
+    return res.status(400).send({ message: "Invalid id provided." });
+  }
+
+  const newData = {};
+  const { email, name, role } = req.body;
+
+  if (email !== undefined) {
+    newData.email = email;
+  }
+  if (name !== undefined) {
+    newData.name = name;
+  }
+  if (role !== undefined) {
+    newData.role = role;
+  }
+
+  User.updateOne(
+    { _id: userIdToUpdate },
+    { $set: newData },
+    { new: true, runValidators: true },
+  )
+    .then((result) => {
+      if (!result.matchedCount) {
+        console.error(
+          `User requested to be updated (id=${userIdToUpdate}) by ${req.user.userId} not found`,
+        );
+        return res.status(404).send({ message: "User not found" });
+      }
+      console.log(
+        `User (id=${userIdToUpdate}) successfully updated by ${req.user.userId}`,
+      );
+      return res.send({ message: "Done" });
+    })
+    .catch((err) => {
+      if (err.errors.role || err.errors.email) {
+        console.error(
+          `Invalid role ("${role}") or email ("${email}") provided by ${req.user.userId} to update user (id=${userIdToUpdate})`,
+        );
+        return res.status(400).send({ message: "Invalid data provided." });
+      }
+
+      console.error(
+        `Error while updating user (id=${userIdToUpdate}) as requested by ${req.user.userId}`,
+        err,
+      );
+      return res.status(500).send("Internal Server Error");
     });
 };
