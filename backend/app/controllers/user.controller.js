@@ -67,16 +67,16 @@ exports.fetchOne = async (req, res) => {
     console.error(
       `No user id provided (or invalid one) by ${req.user.userId}: ${requestedUserId}`,
     );
-    return res.status(400).send({ message: "Invalid id." });
+    return res.status(400).send({ message: "Invalid id provided." });
   }
 
   User.findOne({ _id: requestedUserId })
     .then((requestedUser) => {
       if (!requestedUser) {
-        console.error(
+        console.log(
           `No user with id=${requestedUserId} as requested by ${req.user.userId}.`,
         );
-        return res.status(400).send({ message: "Invalid id." });
+        return res.status(404).send({ message: "User not found." });
       }
       console.log(
         `User with id=${requestedUserId} successfully fetched by ${req.user.userId}`,
