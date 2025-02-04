@@ -10,5 +10,8 @@ module.exports = (app) => {
   // Fetch a user
   router.get("/:id", authMiddleware, users.fetchOne);
 
+  // Delete a user
+  router.delete("/:id", authMiddleware, users.deleteOne);
+
   app.use("/api/user", router);
 };

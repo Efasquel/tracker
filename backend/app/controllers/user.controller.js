@@ -91,3 +91,42 @@ exports.fetchOne = async (req, res) => {
       return res.status(500).send({ message: "Server Internal Error" });
     });
 };
+
+/**
+ * Delete a user.
+ * @param {*} req - request received containing in param:
+ *                  - id (String):    id of the user to delete.
+ * @param {*} res - response to send after dealing with the query:
+ *                  - A message indicating whether the operation was successful or not.
+ */
+exports.deleteOne = async (req, res) => {
+  const requestedUserId = req.params?.id;
+
+  if (!requestedUserId || !ObjectId.isValid(requestedUserId)) {
+    console.error(
+      `No user id provided (or invalid one) by ${req.user.userId}: ${requestedUserId}`,
+    );
+    return res.status(400).send({ message: "Invalid id provided." });
+  }
+
+  User.deleteOne({ _id: requestedUserId })
+    .then((result) => {
+      if (!result.deletedCount) {
+        console.log(
+          `No user with id=${requestedUserId} to delete as requested by ${req.user.userId}.`,
+        );
+        return res.status(404).send({ message: "User not found." });
+      }
+      console.log(
+        `User with id=${requestedUserId} successfully deleted by ${req.user.userId}.`,
+      );
+      return res.send({ message: "Done." });
+    })
+    .catch((err) => {
+      console.error(
+        `Error while deleting user with id=${requestedUserId} as requested by ${req.user.userId}:`,
+        err,
+      );
+      return res.status(500).send({ message: "Server Internal Error" });
+    });
+};
