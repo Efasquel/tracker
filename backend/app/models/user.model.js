@@ -27,6 +27,18 @@ const schema = new mongoose.Schema(
       default: "member",
       required: true,
     },
+    habits: [
+      {
+        habitId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Habit",
+        },
+        isActive: {
+          type: Boolean,
+          default: true,
+        },
+      },
+    ],
   },
   { timestamps: true },
 );
