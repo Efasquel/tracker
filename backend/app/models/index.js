@@ -7,6 +7,6 @@ const db = {};
 db.mongoose = mongoose;
 db.url = dbConfig.url;
 db.users = require("./user.model");
-db.habits = require("./habits.model");
+db.habits = require("./habit.model");
 
 module.exports = db;
