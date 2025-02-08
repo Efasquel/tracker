@@ -60,12 +60,12 @@ exports.createHabitAndAddToUser = async (req, res) => {
   const user = await User.findById(userId).populate("habits.id", "name").exec();
 
   const habitAlreadyFollowed = user.habits.some(
-    (habit) => habit.id.name === name,
+    (habit) => habit.id.name === name.trim(),
   );
 
   if (habitAlreadyFollowed) {
     console.log(
-      `Habit '${name}' is already followed by user with id=${userId} (request by ${createdBy})`,
+      `Habit '${name.trim()}' is already followed by user with id=${userId} (request by ${createdBy})`,
     );
     return res
       .status(409)
