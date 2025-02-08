@@ -1,5 +1,7 @@
 module.exports = (app) => {
   const users = require("../controllers/user.controller");
+  const habits = require("../controllers/habit.controller");
+
   const { authMiddleware } = require("../middleware/auth");
 
   const router = require("express").Router();
@@ -15,6 +17,9 @@ module.exports = (app) => {
 
   // Update a user or a set of users
   router.patch("/:id", authMiddleware, users.updateOne);
+
+  // Add a habit
+  router.post("/:id/habit", authMiddleware, habits.createHabitAndAddToUser);
 
   app.use("/api/user", router);
 };
