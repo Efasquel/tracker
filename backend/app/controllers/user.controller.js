@@ -158,11 +158,20 @@ exports.updateOne = async (req, res) => {
   if (email !== undefined) {
     newData.email = email;
   }
-  if (name !== undefined) {
+  if (name && name !== undefined) {
     newData.name = name;
   }
   if (role !== undefined) {
     newData.role = role;
+  }
+  if (Object.keys(newData).length === 0) {
+    console.error(
+      `No valid data provided to update user (id=${userIdToUpdate}) as requested by ${req.user.userId}:`,
+      { email, name, role },
+    );
+    return res
+      .status(400)
+      .send({ message: "Missing or invalid fields in the request" });
   }
 
   User.updateOne(
@@ -178,7 +187,8 @@ exports.updateOne = async (req, res) => {
         return res.status(404).send({ message: "User not found" });
       }
       console.log(
-        `User (id=${userIdToUpdate}) successfully updated by ${req.user.userId}`,
+        `User (id=${userIdToUpdate}) successfully updated by ${req.user.userId} with following data`,
+        { newData },
       );
       return res.send({ message: "Done" });
     })

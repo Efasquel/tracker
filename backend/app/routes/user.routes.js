@@ -15,7 +15,7 @@ module.exports = (app) => {
   // Delete a user
   router.delete("/:id", authMiddleware, users.deleteOne);
 
-  // Update a user or a set of users
+  // Update a user
   router.patch("/:id", authMiddleware, users.updateOne);
 
   // Add a habit to a user
