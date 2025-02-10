@@ -99,3 +99,72 @@ exports.createHabitAndAddToUser = async (req, res) => {
       return res.status(500).send("Internal Server Error");
     });
 };
+
+/**
+ * Remove a habit from a user.
+ * @param {*} req - request received with params:
+ *                  - userId (String):        user id to whom adding the habit
+ *                  - habitId (String):       id of the habit to remove
+ * @param {*} res - response to send after dealing with the query.
+ */
+exports.removeHabitFromUser = async (req, res) => {
+  const { userId, habitId } = req.params;
+
+  if (!ObjectId.isValid(userId) || !ObjectId.isValid(habitId)) {
+    console.error(
+      `Invalid or missing userId ('${userId}') or habitId ('${habitId}') in requets to remove user habit made by ${req.user.userId}`,
+    );
+    return res
+      .status(400)
+      .send({ message: "Missing or invalid fields in the request" });
+  }
+
+  try {
+    // Verify user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      console.error(
+        `User (id=${userId}) not found while being requested to remove habit (id=${habitId} by ${req.user.userId}`,
+      );
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    // Verify habit followed by user
+    const habitExists = user.habits.some(
+      (habit) => habit.id.toString() === habitId,
+    );
+    if (!habitExists) {
+      console.error(
+        `Habit (id=${habitId}) not found in user (id=${userId}) while being requested to be removed by ${req.user.userId}`,
+      );
+      return res
+        .status(404)
+        .send({ message: "User was not following such habit" });
+    }
+
+    // Remove habit from user
+    User.updateOne(
+      { _id: userId },
+      { $pull: { habits: { id: habitId } } },
+    ).then((result) => {
+      if (result.modifiedCount === 0) {
+        console.error(
+          `Habit (id=${habitId}) not found in user (id=${userId}) while being requested to be removed by ${req.user.userId}`,
+        );
+        return res
+          .status(404)
+          .send({ message: "User was not following such habit" });
+      }
+      console.log(
+        `Habit (id=${habitId}) followed by user (id=${userId}) successfully removed by ${req.user.userId}`,
+      );
+      return res.send({ message: "Habit successfully removed from user" });
+    });
+  } catch (err) {
+    console.error(
+      `Error while removing habit (id:${habitId}) from user (id=${userId}) as requested by ${req.user.userId}`,
+      err,
+    );
+    return res.status(500).send("Internal Server Error");
+  }
+};

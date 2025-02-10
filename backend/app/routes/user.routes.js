@@ -18,8 +18,15 @@ module.exports = (app) => {
   // Update a user or a set of users
   router.patch("/:id", authMiddleware, users.updateOne);
 
-  // Add a habit
+  // Add a habit to a user
   router.post("/:id/habit", authMiddleware, habits.createHabitAndAddToUser);
+
+  // Remove a habit from a user
+  router.delete(
+    "/:userId/habit/:habitId",
+    authMiddleware,
+    habits.removeHabitFromUser,
+  );
 
   app.use("/api/user", router);
 };
