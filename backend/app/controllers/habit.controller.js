@@ -168,3 +168,110 @@ exports.removeHabitFromUser = async (req, res) => {
     return res.status(500).send("Internal Server Error");
   }
 };
+
+/**
+ * Update a habit.
+ * @param {*} req - request received with params and body:
+ *                  - habitId (String):       id of the habit to remove
+ *                  - name (String):          new habit name
+ *                  - description (String):   new habit description
+ *                  - isMandatory (Boolean):  new indicator of whether the habit is mandatory or not
+ *                  - defaultScore (Number):  new default score for habit
+ * @param {*} res - response to send after dealing with the query.
+ */
+exports.updateOne = async (req, res) => {
+  const { habitId } = req.params;
+
+  // Validate required fields
+  if (!habitId || !ObjectId.isValid(habitId)) {
+    console.error(
+      `Missing or invalid habitId in the request made by ${req.user.userId}": ${habitId}`,
+    );
+    return res
+      .status(400)
+      .send({ message: "Missing or invalid fields in the request" });
+  }
+
+  // Check the data provided
+  const newData = {};
+  const { name, description, defaultScore, isMandatory } = req.body;
+
+  if (name && name !== undefined) {
+    newData.name = name;
+  }
+  if (description && description !== undefined) {
+    newData.description = description;
+  }
+  if (defaultScore && defaultScore !== undefined) {
+    if (isNaN(defaultScore) || typeof defaultScore === "boolean") {
+      console.error(
+        `Invalid field "defaultScore" provided to update habit (id=${habitId}) as requested by ${req.user.userId}:`,
+        defaultScore,
+      );
+      return res
+        .status(400)
+        .send({ message: "Missing or invalid fields in the request" });
+    }
+    newData.defaultScore = defaultScore;
+  }
+  if (isMandatory && isMandatory !== undefined) {
+    let parsedIsMandatory = undefined;
+    if (typeof isMandatory === "boolean") {
+      parsedIsMandatory = isMandatory;
+    } else if (typeof isMandatory === "string") {
+      if (isMandatory.toLowerCase() === "true") {
+        parsedIsMandatory = true;
+      } else if (isMandatory.toUpperCase() === "false") {
+        parsedIsMandatory = false;
+      }
+    }
+    if (parsedIsMandatory === undefined) {
+      console.error(
+        `Invalid field "isMandatory" provided to update habit (id=${habitId}) as requested by ${req.user.userId}:`,
+        isMandatory,
+      );
+      return res
+        .status(400)
+        .send({ message: "Missing or invalid fields in the request" });
+    }
+    newData.isMandatory = parsedIsMandatory;
+  }
+
+  if (Object.keys(newData).length === 0) {
+    console.error(
+      `No valid data provided to update habit (id=${habitId}) as requested by ${req.user.userId}:`,
+      { name, description, isMandatory, defaultScore },
+    );
+    return res
+      .status(400)
+      .send({ message: "Missing or invalid fields in the request" });
+  }
+
+  // Update the habit with the new data
+  Habit.updateOne(
+    { _id: habitId },
+    { $set: newData },
+    { new: true, runValidators: true },
+  )
+    .then((result) => {
+      if (!result.matchedCount) {
+        console.error(
+          `Habit requested to be updated (id=${habitId}) by ${req.user.userId} not found`,
+        );
+        return res.status(404).send({ message: "Habit not found" });
+      }
+      console.log(
+        `Habit (id=${habitId}) successfully updated by ${req.user.userId} with following data:`,
+        { newData },
+      );
+      return res.send({ message: "Done" });
+    })
+    .catch((err) => {
+      console.error(
+        `Error while updating user (id=${habitId}) as requested by ${req.user.userId} with following data:`,
+        newData,
+        err,
+      );
+      return res.status(500).send({ message: "Internal Server Error" });
+    });
+};
