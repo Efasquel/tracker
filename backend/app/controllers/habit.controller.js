@@ -2,6 +2,7 @@ const db = require("../models");
 
 const User = db.users;
 const Habit = db.habits;
+const HabitLog = db.habitLogs;
 
 const { ObjectId } = db.mongoose.Types;
 
@@ -165,7 +166,7 @@ exports.removeHabitFromUser = async (req, res) => {
       `Error while removing habit (id:${habitId}) from user (id=${userId}) as requested by ${req.user.userId}`,
       err,
     );
-    return res.status(500).send("Internal Server Error");
+    return res.status(500).send({ message: "Internal Server Error" });
   }
 };
 
@@ -274,4 +275,99 @@ exports.updateOne = async (req, res) => {
       );
       return res.status(500).send({ message: "Internal Server Error" });
     });
+};
+
+/**
+ * Track whether a habit is completed for a day.
+ * @param {*} req - request received with params and body:
+ *                  - habitId (String):           id of the habit to remove
+ *                  - userId (String):            id of the user following the habit
+ *                  - isCompleted (Boolean):      whether habit is completed
+ *                  - targetCompletionAt (Date):  when the habit is supposed to be completed
+ * @param {*} res - response to send after dealing with the query.
+ */
+exports.trackHabit = async (req, res) => {
+  const { userId, habitId } = req.params;
+
+  const { isCompleted, targetCompletionAt } = req.body;
+
+  // Sanitize isCompleted
+  let parsedIsCompleted = undefined;
+  if (typeof isCompleted === "boolean") {
+    parsedIsCompleted = isCompleted;
+  } else if (typeof isMandatory === "string") {
+    if (isCompleted.toLowerCase() === "true") {
+      parsedIsCompleted = true;
+    } else if (isCompleted.toUpperCase() === "false") {
+      parsedIsCompleted = false;
+    }
+  }
+
+  // Sanitize targetCompletionAt
+  let parsedTargetCompletionAt = new Date(targetCompletionAt);
+
+  // Verify inputs
+  if (
+    !userId ||
+    !ObjectId.isValid(userId) ||
+    !habitId ||
+    !ObjectId.isValid(habitId) ||
+    !(parsedTargetCompletionAt instanceof Date) ||
+    Number.isNaN(parsedTargetCompletionAt.getTime()) ||
+    parsedIsCompleted == undefined
+  ) {
+    console.error(
+      `Missing or invalid fields in the request made by ${req.user.userId} to update habit(id=${habitId}) from user (id=${userId})":`,
+      { isCompleted, targetCompletionAt },
+    );
+    return res
+      .status(400)
+      .send({ message: "Missing or invalid fields in the request" });
+  }
+
+  parsedTargetCompletionAt = new Date(
+    parsedTargetCompletionAt.toISOString().split("T")[0],
+  );
+
+  // Update or create habit log
+  try {
+    const result = await HabitLog.updateOne(
+      { habitId, userId, "logs.targetCompletionAt": parsedTargetCompletionAt },
+      {
+        $set: {
+          "logs.$.isCompleted": parsedIsCompleted,
+        },
+      },
+    );
+
+    // If habit log not found, create one
+    if (result.matchedCount === 0) {
+      await HabitLog.updateOne(
+        { userId, habitId },
+        {
+          $push: {
+            logs: {
+              isCompleted: parsedIsCompleted,
+              targetCompletionAt: parsedTargetCompletionAt,
+            },
+          },
+        },
+        { upsert: true },
+      );
+    }
+    console.log(
+      `Habit (id=${habitId}) tracked for user (id=${userId}) as requested by ${req.user.userId}:`,
+      {
+        isCompleted: parsedIsCompleted,
+        targetCompletionAt: parsedTargetCompletionAt,
+      },
+    );
+    return res.send({ message: "Habit successfully tracked." });
+  } catch (err) {
+    console.error(
+      `Error while tracking habit (id=${habitId}) for user (id=${userId}) as requested by ${req.user.userId}`,
+      err,
+    );
+    return res.status(500).send({ message: "Internal Server Error" });
+  }
 };

@@ -28,5 +28,12 @@ module.exports = (app) => {
     habits.removeHabitFromUser,
   );
 
+  // Add a log for a habit
+  router.post(
+    "/:userId/habit/:habitId/track",
+    authMiddleware,
+    habits.trackHabit,
+  );
+
   app.use("/api/user", router);
 };
