@@ -14,6 +14,16 @@ app.use(cors(corsOptions));
 // parse requests of content-type - application/json
 app.use(express.json());
 
+// Handle invalid JSON errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({
+      message: "Invalid JSON format. Please check your request body.",
+    });
+  }
+  next(); // Pass other errors to the default error handler
+});
+
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }));
 
@@ -36,6 +46,7 @@ app.get("/", (req, res) => {
 // Other routes
 require("./app/routes/auth.routes")(app);
 require("./app/routes/user.routes")(app);
+require("./app/routes/habit.routes")(app);
 
 // set port, listen for requests
 const PORT = process.env.PORT || 8080;

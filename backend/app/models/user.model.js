@@ -4,7 +4,21 @@ const argon2 = require("argon2");
 const emailRegex =
   /^(([^<>()\[\]\.,;:\s@"]+(\.[^<>()\[\]\.,;:\s@"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
-const schema = new mongoose.Schema(
+const habitSchema = new mongoose.Schema(
+  {
+    id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Habit",
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  { _id: false },
+);
+
+const userSchema = new mongoose.Schema(
   {
     email: {
       type: String,
@@ -27,18 +41,21 @@ const schema = new mongoose.Schema(
       default: "member",
       required: true,
     },
+    habits: {
+      type: [habitSchema],
+    },
   },
   { timestamps: true },
 );
 
-schema.method("toJSON", function toJSON() {
+userSchema.method("toJSON", function toJSON() {
   const { __v, _id, password, ...object } = this.toObject();
   object.id = _id;
   return object;
 });
 
 // Pre-save hook to hash the password
-schema.pre("save", async function (next) {
+userSchema.pre("save", async function (next) {
   if (this.isModified("password") || this.isNew) {
     try {
       this.password = await argon2.hash(this.password);
@@ -52,8 +69,8 @@ schema.pre("save", async function (next) {
 });
 
 // Method to compare passwords
-schema.methods.validatePassword = function (candidatePassword) {
+userSchema.methods.validatePassword = function (candidatePassword) {
   return argon2.verify(this.password, candidatePassword);
 };
 
-module.exports = mongoose.model("User", schema);
+module.exports = mongoose.model("User", userSchema);
