@@ -1,6 +1,7 @@
 module.exports = (app) => {
   const users = require("../controllers/user.controller");
   const habits = require("../controllers/habit.controller");
+  const stats = require("../controllers/stat.controller");
 
   const { authMiddleware } = require("../middleware/auth");
 
@@ -34,6 +35,8 @@ module.exports = (app) => {
     authMiddleware,
     habits.trackHabit,
   );
+
+  router.get("/:userId/score", authMiddleware, stats.fetchUserScore);
 
   app.use("/api/user", router);
 };
