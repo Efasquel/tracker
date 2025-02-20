@@ -1,6 +1,7 @@
 module.exports = (app) => {
   const users = require("../controllers/user.controller");
   const habits = require("../controllers/habit.controller");
+  const stats = require("../controllers/stat.controller");
 
   const { authMiddleware } = require("../middleware/auth");
 
@@ -21,6 +22,9 @@ module.exports = (app) => {
   // Add a habit to a user
   router.post("/:id/habit", authMiddleware, habits.createHabitAndAddToUser);
 
+  // Fetch user habits
+  router.get("/:userId/habits", authMiddleware, habits.fetchHabitsFromUser);
+
   // Remove a habit from a user
   router.delete(
     "/:userId/habit/:habitId",
@@ -34,6 +38,9 @@ module.exports = (app) => {
     authMiddleware,
     habits.trackHabit,
   );
+
+  // Fetch user score
+  router.get("/:userId/score", authMiddleware, stats.fetchUserScore);
 
   app.use("/api/user", router);
 };
