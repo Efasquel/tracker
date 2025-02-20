@@ -22,6 +22,9 @@ module.exports = (app) => {
   // Add a habit to a user
   router.post("/:id/habit", authMiddleware, habits.createHabitAndAddToUser);
 
+  // Fetch user habits
+  router.get("/:userId/habits", authMiddleware, habits.fetchHabitsFromUser);
+
   // Remove a habit from a user
   router.delete(
     "/:userId/habit/:habitId",
@@ -36,6 +39,7 @@ module.exports = (app) => {
     habits.trackHabit,
   );
 
+  // Fetch user score
   router.get("/:userId/score", authMiddleware, stats.fetchUserScore);
 
   app.use("/api/user", router);

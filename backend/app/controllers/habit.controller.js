@@ -371,3 +371,72 @@ exports.trackHabit = async (req, res) => {
     return res.status(500).send({ message: "Internal Server Error" });
   }
 };
+
+/**
+ * Fetch user habits.
+ * @param {*} req - request received with params and body:
+ *                  - userId (String):            id of the user to whom getting the habits
+ * @param {*} res - response to send after dealing with the query:
+ *                  - A list of habits with their associated logs
+ */
+exports.fetchHabitsFromUser = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId || !ObjectId.isValid(userId)) {
+    console.error(
+      `Invalid user (id=${userId}) provided in the request made by ${req.user.userId} to get habits.`,
+    );
+    return res
+      .status(400)
+      .send({ message: "Missing or invalid fields in the request" });
+  }
+
+  try {
+    const user = await User.findById(userId).select({ habits: 1 });
+
+    if (!user) {
+      console.error(
+        `Invalid userId (=${userId}) provided in the request made by ${req.user.userId} to get habits.`,
+      );
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    // Get active habits Ids followed by user
+    const userActiveHabitIds = user.habits
+      .filter((habit) => habit.isActive)
+      .map((habit) => habit.id);
+
+    // Get full data for the active habits followed by user
+    const userActiveHabits = await Habit.find({
+      _id: userActiveHabitIds,
+    });
+
+    // Fetch logs associated to each active habit
+    const userActiveHabitsWithLogs = await Promise.all(
+      userActiveHabits.map(async (activeHabit) => {
+        const habitLog = await HabitLog.findOne({
+          userId,
+          habitId: activeHabit._id,
+        }).select({
+          logs: 1,
+          _id: 0,
+        });
+        return {
+          ...activeHabit.toJSON(),
+          logs:
+            habitLog?.logs.map((log) => ({
+              isCompleted: log.isCompleted,
+              targetCompletionAt: log.targetCompletionAt,
+            })) || [],
+        };
+      }),
+    );
+    return res.send({ habits: userActiveHabitsWithLogs });
+  } catch (err) {
+    console.error(
+      `Error while getting user habits for user (id=${userId}) (request by ${req.user.userId})`,
+      err,
+    );
+    return res.status(500).send({ message: "Internal Server Error" });
+  }
+};
