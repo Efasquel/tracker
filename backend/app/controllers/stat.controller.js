@@ -68,8 +68,9 @@ exports.fetchUserScore = async (req, res) => {
     );
     return res.send({ score, scoreMax });
   } catch (err) {
-    console.log(
+    console.error(
       `Error while getting user score for user (id=${userId}) (request by ${req.user.userId})`,
+      err,
     );
     return res.status(500).send({ message: "Internal Server Error" });
   }
